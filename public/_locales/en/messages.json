@@ -1,0 +1,4 @@
+{
+  "extName": { "message": "Lumen Proxy" },
+  "extDescription": { "message": "Proxy by rules: your own searchable domain list, PAC scripts, blocking direct connections." }
+}

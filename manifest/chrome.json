@@ -1,0 +1,26 @@
+{
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "proxy",
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "webRequest",
+    "webRequestAuthProvider",
+    "offscreen",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "sandbox": {
+    "pages": [
+      "sandbox.html"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'",
+    "sandbox": "sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'none'"
+  }
+}
