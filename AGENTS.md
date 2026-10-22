@@ -18,6 +18,8 @@ npm run e2e:shots       # same, plus screenshots of popup/options (light/dark, e
 npm run e2e:firefox     # real Firefox run of dist/firefox (setup flow, routing, auth, PAC, block DIRECT)
 npm run dev:chrome      # watch build of one target (also dev:firefox)
 npm run zip             # lumen-proxy-chrome.zip and lumen-proxy-firefox.zip (also zip:chrome, zip:firefox)
+npm run zip:source      # lumen-proxy-source.zip for AMO review (git files minus store/, .github/)
+npm run store           # build:chrome, then store screenshots and promo images (en/ru/global) into store/
 ```
 
 A change is done when `npm test`, `npm run check` and `npm run build` pass. Run `npm run e2e` after touching
@@ -54,7 +56,11 @@ assets/icon.svg             source icon (shield with globe); scripts/icons.mjs r
                             public/icons/: manifest sizes plus per-state toolbar icons (<state>-16/32.png),
                             using a simplified, thicker variant for 16/32 px
 scripts/                    icon generator, manifest merge, zip, licenses.mjs (LICENSE.txt with bundled
-                            third-party notices, generated from the module graph on every build)
+                            third-party notices, generated from the module graph on every build),
+                            store.mjs (store screenshots and promo images, marketing copy in its COPY table)
+store/                      store listing: description.en/ru.txt, privacy.en.txt (permission justifications,
+                            remote code and data usage answers), generated screenshots/ and promo/
+README.md, README.ru.md     GitHub readme in English and Russian; .github/assets/ holds the official store badges
 tests/                      vitest unit tests; e2e/run.mjs is the Chromium end-to-end test
 ```
 
@@ -111,6 +117,7 @@ Each invariant has a test in `tests/pac.test.ts` or `e2e/run.mjs`. Add a test wh
 ## Language
 
 - Code, identifiers, AGENTS.md and skills: English.
+- `README.md` (English) and `README.ru.md` (Russian) have the same content; change both together.
 - The UI is bilingual: English and Russian. The `language` setting is `auto | ru | en`; `auto` resolves to Russian
   only when the browser UI language starts with `ru`, otherwise English (`resolveLang` in `src/shared/i18n`).
 - No user-facing literal strings in components or background code. Add a key to `src/shared/i18n/en.ts` and the

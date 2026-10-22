@@ -7,6 +7,7 @@ const target = process.argv[2];
 if (!['chrome', 'firefox', 'source'].includes(target)) throw new Error('Usage: node scripts/zip.mjs chrome|firefox|source');
 const SOURCE = target === 'source' ? '.' : `dist/${target}`;
 const TARGET = `lumen-proxy-${target}.zip`;
+const NOT_IN_SOURCE = ['store/', '.github/'];
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -35,7 +36,9 @@ function dosDateTime(date) {
 
 function sourceFiles() {
   try {
-    return execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+    return execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' })
+      .split('\0')
+      .filter((name) => name && !NOT_IN_SOURCE.some((dir) => name.startsWith(dir)));
   } catch {
     throw new Error('Packing the source needs git: the file list comes from `git ls-files` so .gitignore is respected');
   }

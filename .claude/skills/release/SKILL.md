@@ -33,8 +33,14 @@ description: Prepare a Lumen Proxy release - bump the version, run all checks, b
 6. **Notes** - write release notes in Russian and English, user-facing: what changed for the user, not internals.
    Mention any new permission and why it is needed.
 
+7. **Docs and listing** - if features changed, update `README.md` and `README.ru.md` together, and
+   `store/description.en.txt` / `store/description.ru.txt`. If the UI changed visibly, run `npm run store` and
+   commit the regenerated `store/screenshots/` and `store/promo/` (the copy on the images lives in `COPY` in
+   `scripts/store.mjs`, in both languages).
+
 ## Firefox Add-ons (AMO) specifics
 
+- Listing: https://addons.mozilla.org/firefox/addon/lumen-proxy/ (no locale in links; AMO picks the user's language).
 - The add-on id `{746b5e76-a6b7-4690-aed0-ae70ea57dace}` in `manifest/firefox.json` is permanent: AMO binds it to the listing on
   the first upload and rejects any other add-on using it ("Duplicate add-on ID"). Never change it; new releases are
   uploaded as new versions of the same listing.
@@ -42,13 +48,18 @@ description: Prepare a Lumen Proxy release - bump the version, run all checks, b
 - Reviewers may ask about the remaining linter warning (`innerHTML`): it is Svelte's runtime creating DOM from
   compile-time templates; no user data reaches it (`{@html}` is not used).
 - AMO asks for source code because the build is minified: upload `lumen-proxy-source.zip` from
-  `npm run zip:source` (git-tracked and unignored files, includes `package-lock.json` and `SOURCE_BUILD.md` with the
+  `npm run zip:source` (git-tracked and unignored files except `store/` and `.github/`, includes `package-lock.json` and `SOURCE_BUILD.md` with the
   reviewer instructions). Before uploading, prove reproducibility: unpack it into an empty folder, run
   `npm ci && npm run build:firefox`, and `diff -r` the result with `dist/firefox` — it must be identical.
   Keep the Node/npm versions in `SOURCE_BUILD.md` in sync with the ones you release with.
 
 ## Chrome Web Store specifics
 
-- The `proxy`, `webRequest` and `webRequestAuthProvider` permissions need a justification in the listing.
-- Single purpose: "route browser traffic through user-configured proxies by rules".
-- Privacy: the extension sends no data anywhere; it downloads only the PAC URL the user entered.
+- Listing: https://chromewebstore.google.com/detail/lumen-proxy/bohgadimlbncallihhhnigidffjfalec
+- Every permission, including optional ones (`privacy`), needs a justification on the "Privacy practices" tab.
+  The texts, the single purpose, the remote code answer and the data usage answer are in `store/privacy.en.txt`;
+  when a permission is added or its use changes, update that file and paste the new text into the dashboard.
+- Remote code: answered "Yes" - the user's PAC script is test-run in the sandbox page and handed to
+  `chrome.proxy`; extension code itself is never loaded remotely.
+- Privacy: the extension sends no data anywhere; it downloads only the PAC URL the user entered. No data usage
+  categories are ticked.
