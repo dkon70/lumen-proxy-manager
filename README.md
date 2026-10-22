@@ -1,173 +1,190 @@
 # Lumen Proxy
 
-Расширение для Chrome и Firefox, которое направляет сайты через ваш прокси по правилам. Свой список доменов с поиском,
-подключение PAC-скриптов, запрет прямого соединения и защита от утечек через WebRTC. Светлая и тёмная тема
-берутся из настроек браузера. Интерфейс на русском и английском.
+**English** · [Русский](README.ru.md)
 
-## Возможности
+![Lumen Proxy](store/promo/en/marquee-1400x560.png)
 
-**Режимы**
-- **Выключен** — расширение не вмешивается, работают настройки Chrome и системы.
-- **По правилам** — через прокси идут сайты из вашего списка и те, что выбрал PAC-скрипт.
-- **Весь трафик** — всё через прокси, кроме исключений и локальных адресов.
+<p>
+  <a href="https://chromewebstore.google.com/detail/lumen-proxy/bohgadimlbncallihhhnigidffjfalec"><img src=".github/assets/chrome-web-store.png" alt="Available in the Chrome Web Store" height="58"></a>
+  <a href="https://addons.mozilla.org/firefox/addon/lumen-proxy/"><img src=".github/assets/firefox-addons.png" alt="Get the add-on for Firefox" height="58"></a>
+</p>
 
-**Списки сайтов**
-- Два списка: «Через прокси» и «Напрямую». Домен действует вместе с поддоменами:
-  `example.com` охватывает `www.example.com`.
-- Если правила пересекаются, побеждает более точное. Например, `google.com` идёт через прокси,
-  а `mail.google.com` — напрямую.
-- Мгновенный поиск с подсветкой, даже по десяткам тысяч доменов.
-- Если вставить в поиск адрес сайта, расширение покажет, какое правило его покрывает.
-- Можно выделить несколько доменов и удалить их или перенести в другой список. Удаление отменяется кнопкой «Вернуть».
-- Добавлять можно сразу пачкой: через запятую, построчно, ссылками. Есть импорт и экспорт в `.txt`.
+A Chrome and Firefox extension that sends sites through your proxy by your own rules. Your own searchable domain list,
+PAC scripts, blocking of direct connections and WebRTC leak protection. Light and dark theme follow the browser.
+Interface in English and Russian.
 
-**PAC-скрипты**
-- Подключаются по ссылке (с автообновлением) или вставкой текста.
-- «Направлять в свой прокси»: сайты, которые PAC отправляет в прокси, пойдут через ваш сервер, а не через
-  серверы из скрипта.
-- Ваши списки всегда важнее PAC.
+## Features
 
-**Попап**
-- Показывает, куда пойдёт открытый сайт и по какому правилу.
-- Сайт можно добавить в список или убрать из него в один клик, выбрав уровень домена.
-- Здесь же переключаются режим и активный прокси.
+**Modes**
+- **Off**: the extension stays out of the way, browser and system settings apply.
+- **By rules**: sites from your list and those chosen by the PAC script go through the proxy.
+- **All traffic**: everything goes through the proxy except exceptions and local addresses.
 
-**Прочее**
-- Несколько прокси-серверов: HTTP, HTTPS, SOCKS4, SOCKS5, с логином и паролем.
-  Строку вида `socks5://user:pass@host:port` можно вставить целиком.
-- Раздел «Проверка адреса» показывает, куда пойдёт любой адрес с текущими настройками.
-- Резервная копия настроек в файл. Пароли попадают туда только по отдельной галочке.
-- Язык интерфейса: русский или английский. По умолчанию берётся из браузера: русский — если браузер на русском,
-  иначе английский. В «Прокси-серверы → Интерфейс» язык можно выбрать вручную.
+**Site lists**
+- Two lists: "Via proxy" and "Direct". A domain covers all its subdomains: `example.com` also covers
+  `www.example.com`.
+- When rules overlap, the more specific one wins. For example, `google.com` goes through the proxy
+  and `mail.google.com` goes direct.
+- Instant search with highlighting, even across tens of thousands of domains.
+- Paste a site address into the search to see which rule covers it.
+- Select several domains to delete them or move them to the other list. A deletion can be undone with "Undo".
+- Add domains in bulk: comma-separated, one per line or as links. Import and export as `.txt`.
 
-## Безопасность
+**PAC scripts**
+- Connect a PAC script by link (with auto-update) or paste it as text.
+- "Route to my proxy": sites the PAC sends to a proxy go through your server instead of the servers from the script.
+- Your lists always take priority over the PAC script.
 
-- **Запрет DIRECT** (включён по умолчанию):
-  - если прокси недоступен, сайт не откроется — расширение не перейдёт тихо на прямое соединение;
-  - из ответов PAC вида `PROXY …; DIRECT` вариант `DIRECT` убирается;
-  - если сломается сам PAC-скрипт, Chrome заблокирует запросы, а не пустит их напрямую.
-- **Изоляция PAC.** Внешний скрипт не может обойти ваши списки или подменить логику расширения,
-  даже если попытается.
-- **Проверка перед применением.** Новая версия PAC сначала выполняется в песочнице без доступа к сети.
-  Если в ней ошибка, остаётся прежняя версия. Если Chrome всё же не сможет её выполнить, расширение
-  откатится на предыдущую.
-- **Загрузка PAC** только по HTTPS (HTTP — по явному разрешению), без cookies, до 32 МБ. Медленная загрузка
-  не обрывается, пока сервер присылает данные; обрыв — только если он молчит 30 секунд.
-- **Минимум разрешений.** Доступ к сайтам запрашивается только когда нужен:
-  - к одному сайту — при загрузке PAC;
-  - ко всем — только если у прокси есть логин, иначе Chrome не даст передать пароль.
-- **Пароли** хранятся только локально и не синхронизируются. Пароль получает только тот прокси, для которого
-  он сохранён; при неверном пароле попытки не повторяются по кругу.
-- **Без DNS-утечек.** Локальные адреса определяются по самому адресу, без DNS-запросов.
-- **Без сбора данных.** Расширение ничего никуда не отправляет.
+**Popup**
+- Shows where the open site goes and which rule decided it.
+- Add a site to a list or remove it in one click, choosing the domain level.
+- Switch the mode and the active proxy right there.
+
+**More**
+- Several proxy servers: HTTP, HTTPS, SOCKS4, SOCKS5, with login and password.
+  Paste a line like `socks5://user:pass@host:port` as a whole.
+- "Check an address" shows where any address goes with the current settings.
+- Settings backup to a file. Passwords are included only if you tick a separate box.
+- Interface language: English or Russian. By default it follows the browser: Russian if the browser is in Russian,
+  English otherwise. You can pick it manually in "Proxy servers → Interface".
+
+## Security
+
+- **Block DIRECT** (on by default):
+  - if the proxy is unavailable, the site does not open: the extension never silently falls back to a direct connection;
+  - `DIRECT` is removed from PAC answers like `PROXY …; DIRECT`;
+  - if the PAC script itself breaks, Chrome blocks requests instead of letting them through directly.
+- **PAC isolation.** An external script cannot bypass your lists or tamper with the extension's logic,
+  even if it tries.
+- **Checked before applying.** A new PAC version first runs in a sandbox with no network access.
+  If it has errors, the previous version stays. If Chrome still cannot run it, the extension rolls back
+  to the previous one.
+- **PAC download** over HTTPS only (HTTP only if you allow it), without cookies, up to 32 MB. A slow download
+  is not cut off while the server keeps sending data; it stops only after 30 seconds of silence.
+- **Least privilege.** Site access is requested only when needed:
+  - for one site, when loading a PAC script;
+  - for all sites, only if your proxy needs a login (otherwise Chrome cannot pass the password).
+- **Passwords** are stored only locally and are never synced. A password goes only to the proxy it was saved for;
+  a wrong password is not retried in a loop.
+- **No DNS leaks.** Local addresses are detected from the address itself, without DNS queries.
+- **No data collection.** The extension sends nothing anywhere.
 
 ### WebRTC
 
-По умолчанию расширение не трогает WebRTC, чтобы не портить звонки. В разделе «Защита» есть три варианта:
+By default the extension does not touch WebRTC, so calls keep working. The "Protection" section has three options:
 
-| Вариант | Звонки | Что видит сайт |
+| Option | Calls | What the site sees |
 |---|---|---|
-| Не менять | как обычно | настоящий IP |
-| Скрыть локальные адреса | почти без изменений | внешний IP, но не адреса вашей сети |
-| Только через прокси | возможны задержки, часть сервисов не дозвонится | только IP прокси |
+| Do not change | work as usual | your real IP |
+| Hide local addresses | almost unchanged | your external IP, but not the addresses inside your network |
+| Proxy only | possible delays, some services will not connect | only the proxy IP |
 
-Компромисс — «Скрыть локальные адреса».
+A good compromise is "Hide local addresses".
 
-## Установка
+## Installation
 
-Нужны Node.js 20.19+ и Chrome 116+ (или Edge, Brave, Opera, Яндекс Браузер) либо Firefox 140+.
+- **Chrome** (also Edge, Brave, Opera, Yandex Browser): [Chrome Web Store](https://chromewebstore.google.com/detail/lumen-proxy/bohgadimlbncallihhhnigidffjfalec)
+- **Firefox**: [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/lumen-proxy/)
+
+In Firefox, after installing open `about:addons` → Lumen Proxy → "Details" → "Run in Private Windows" →
+**Allow**. Without it Firefox does not let extensions change proxy settings.
+
+After installation the settings page opens: add a proxy server and choose a mode.
+
+### Building from source
+
+Requires Node.js 20.19+ and Chrome 116+ (or Edge, Brave, Opera, Yandex Browser) or Firefox 140+.
 
 ```bash
 npm install
 npm run build:chrome     # → dist/chrome
 npm run build:firefox    # → dist/firefox
-npm run build            # обе версии сразу
+npm run build            # both at once
 ```
 
 **Chrome:**
-1. Откройте `chrome://extensions`.
-2. Включите «Режим разработчика».
-3. Нажмите «Загрузить распакованное» и выберите папку `dist/chrome`.
+1. Open `chrome://extensions`.
+2. Turn on "Developer mode".
+3. Click "Load unpacked" and select the `dist/chrome` folder.
 
 **Firefox:**
-1. Откройте `about:debugging#/runtime/this-firefox`.
-2. Нажмите «Загрузить временное дополнение» и выберите файл `dist/firefox/manifest.json`.
-   Временное дополнение пропадает после перезапуска Firefox; для постоянной установки его нужно подписать в AMO.
-3. Откройте `about:addons` → Lumen Proxy → «Подробности» → «Запуск в приватных окнах» → **Разрешить**.
-   Без этого Firefox не даёт расширению менять настройки прокси. Пока разрешения нет, попап и настройки
-   показывают пошаговую инструкцию; после разрешения Lumen включается сам.
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click "Load Temporary Add-on" and select `dist/firefox/manifest.json`.
+   A temporary add-on disappears when Firefox restarts; for a permanent install use the version from Firefox Add-ons.
+3. Open `about:addons` → Lumen Proxy → "Details" → "Run in Private Windows" → **Allow**.
+   Without it Firefox does not let extensions change proxy settings. Until it is allowed, the popup and the settings
+   show step-by-step instructions; once allowed, Lumen turns on by itself.
 
-После установки откроются настройки — добавьте прокси-сервер и выберите режим.
-
-## Разработка
+## Development
 
 ```bash
-npm run dev:chrome     # пересборка при изменениях; затем «Обновить» в chrome://extensions
-npm run dev:firefox    # то же для Firefox; затем «Перезагрузить» в about:debugging
-npm test               # юнит-тесты: PAC, маршруты, переводы, манифесты, Firefox-платформа
-npm run check          # проверка типов (Svelte + TypeScript)
-npm run lint:firefox   # официальный линтер дополнений Mozilla для dist/firefox
-npm run e2e            # сквозной тест Chrome-версии в настоящем Chromium
-npm run e2e:shots      # то же + скриншоты интерфейса в .e2e/shots/
-npm run e2e:firefox    # сквозной тест Firefox-версии в настоящем Firefox
-npm run zip            # архивы lumen-proxy-chrome.zip и lumen-proxy-firefox.zip (или zip:chrome / zip:firefox)
-npm run zip:source     # исходники для проверки в AMO (lumen-proxy-source.zip, инструкция — SOURCE_BUILD.md)
+npm run dev:chrome     # rebuild on changes; then "Reload" in chrome://extensions
+npm run dev:firefox    # same for Firefox; then "Reload" in about:debugging
+npm test               # unit tests: PAC, routing, translations, manifests, Firefox platform
+npm run check          # type check (Svelte + TypeScript)
+npm run lint:firefox   # Mozilla's official add-ons linter on dist/firefox
+npm run e2e            # end-to-end test of the Chrome build in real Chromium
+npm run e2e:shots      # same + UI screenshots in .e2e/shots/
+npm run e2e:firefox    # end-to-end test of the Firefox build in real Firefox
+npm run zip            # lumen-proxy-chrome.zip and lumen-proxy-firefox.zip (or zip:chrome / zip:firefox)
+npm run zip:source     # sources for AMO review (lumen-proxy-source.zip, instructions in SOURCE_BUILD.md)
+npm run store          # store screenshots and promo images in store/
 ```
 
-Все команды одинаково работают на Linux, macOS и Windows.
+All commands work the same on Linux, macOS and Windows.
 
-Сквозному тесту нужен браузер, который умеет загружать расширение из командной строки. Обычный Google Chrome
-начиная с версии 137 этого не делает, поэтому тест ищет браузер так:
-1. путь из переменной `CHROME_PATH`, если она задана;
-2. установленный Chromium в стандартных местах для вашей ОС;
-3. иначе один раз скачивает **Chrome for Testing** (~150 МБ) в папку `.e2e-browsers/` и дальше использует его.
+The end-to-end test needs a browser that can load an extension from the command line. Regular Google Chrome
+stopped doing that in version 137, so the test looks for a browser in this order:
+1. the path in the `CHROME_PATH` environment variable, if set;
+2. an installed Chromium in the standard locations for your OS;
+3. otherwise it downloads **Chrome for Testing** (~150 MB) once into `.e2e-browsers/` and reuses it.
 
-То есть на Windows и macOS ничего ставить вручную не нужно — достаточно `npm run e2e`.
+So on Windows and macOS there is nothing to install by hand: `npm run e2e` is enough.
 
-Устройство проекта, правила и инварианты безопасности описаны в [AGENTS.md](AGENTS.md).
-Пошаговые инструкции для типовых задач — в [.claude/skills](.claude/skills).
+Project layout, rules and security invariants are described in [AGENTS.md](AGENTS.md).
+Step-by-step instructions for common tasks are in [.claude/skills](.claude/skills).
 
-## Стек
+## Stack
 
-Manifest V3, Svelte 5, TypeScript, Vite, Vitest, Puppeteer (только для тестов).
-В собранном расширении нет внешних зависимостей, кроме рантайма Svelte.
+Manifest V3, Svelte 5, TypeScript, Vite, Vitest, Puppeteer (tests only).
+The built extension has no external dependencies other than the Svelte runtime.
 
-## Chrome и Firefox: в чём разница
+## Chrome and Firefox: the differences
 
-Обе версии собираются из одного кода. Всё, что зависит от браузера, вынесено в отдельный слой,
-поэтому ограничения Firefox не влияют на Chrome-версию.
+Both versions are built from one codebase. Everything browser-specific lives in a separate layer,
+so Firefox limitations do not affect the Chrome version.
 
 | | Chrome | Firefox |
 |---|---|---|
-| Списки, режимы, PAC по ссылке и текстом, запрет DIRECT, WebRTC, пароль для HTTP/HTTPS-прокси | да | да |
-| Нужно разрешение «Запуск в приватных окнах» | нет | да, иначе Firefox не даёт менять прокси |
-| Проверка нового PAC перед применением | выполняется в песочнице | только проверка синтаксиса |
-| Откат PAC, если браузер не смог его выполнить | да | нет |
-| Прокси недоступен при запрете DIRECT | сайт не открывается | сайт не открывается |
-| Если сломан сам PAC-скрипт при запрете DIRECT | браузер блокирует запросы (`mandatory`) | не проверено |
-| Точный маршрут в попапе и «Проверке адреса» для сайтов, которые решает внешний PAC | да | показывается «решает PAC-скрипт» |
+| Lists, modes, PAC by link and as text, block DIRECT, WebRTC, password for HTTP/HTTPS proxies | yes | yes |
+| Needs the "Run in Private Windows" permission | no | yes, otherwise Firefox does not allow changing the proxy |
+| Checking a new PAC before applying it | runs in a sandbox | syntax check only |
+| PAC rollback if the browser could not run it | yes | no |
+| Proxy unavailable with block DIRECT | the site does not open | the site does not open |
+| The PAC script itself is broken with block DIRECT | the browser blocks requests (`mandatory`) | not verified |
+| Exact route in the popup and "Check an address" for sites decided by an external PAC | yes | shows "decided by the PAC script" |
 
-Расширения Firefox не могут выполнять код внешнего PAC-скрипта в своих страницах, поэтому точный ответ PAC для
-конкретного сайта в интерфейсе недоступен. Сам Firefox при этом выполняет итоговый PAC целиком, как и Chrome.
+Firefox extensions cannot run external PAC code in their own pages, so the exact PAC answer for a specific site
+is not available in the interface. Firefox itself still runs the full final PAC, just like Chrome.
 
-Обе версии проверяются сквозными тестами в настоящих браузерах (`npm run e2e` и `npm run e2e:firefox`):
-маршрутизация по спискам и PAC, пароль прокси, запрет DIRECT при недоступном прокси, отклонение сломанного PAC.
-Для Firefox тест проходит ещё и сценарий первой установки: без разрешения прокси не применяется и показывается
-инструкция, а после разрешения маршрутизация включается сама.
+Both versions are covered by end-to-end tests in real browsers (`npm run e2e` and `npm run e2e:firefox`):
+routing by lists and PAC, proxy password, block DIRECT with an unavailable proxy, rejection of a broken PAC.
+For Firefox the test also covers the first-install flow: without the permission the proxy is not applied and
+instructions are shown, and once it is granted routing turns on by itself.
 
-## Ограничения браузеров
+## Browser limitations
 
-- Ни Chrome, ни Firefox не умеют передавать логин и пароль SOCKS-прокси, заданного через PAC. Используйте
-  HTTP/HTTPS-прокси или SOCKS с доступом по IP.
-- Прокси в браузере одновременно может управлять только одно расширение. Если это другое расширение,
-  попап предупредит.
-- PAC-скрипты, которые выбирают маршрут по IP через `dnsResolve` или `isInNet`, делают DNS-запросы
-  в обход прокси. Это свойство самих скриптов, а не расширения.
+- Neither Chrome nor Firefox can pass a login and password to a SOCKS proxy set through PAC. Use
+  an HTTP/HTTPS proxy or SOCKS with IP-based access.
+- Only one extension at a time can control the browser's proxy. If another extension holds it,
+  the popup will warn you.
+- PAC scripts that pick a route by IP with `dnsResolve` or `isInNet` make DNS queries outside
+  the proxy. That is a property of the scripts themselves, not of the extension.
 
-## Лицензия
+## License
 
 [MIT](LICENSE) © 2026 dkon70.
 
-В каждую сборку кладётся `LICENSE.txt`: лицензия Lumen Proxy и лицензии сторонних библиотек, которые попали
-в эту сборку (Svelte, esm-env, а в Firefox-версии ещё acorn — все под MIT). Список собирается автоматически
-по графу модулей при сборке.
+Every build includes `LICENSE.txt`: the Lumen Proxy license and the licenses of the third-party libraries that
+ended up in that build (Svelte, esm-env, and acorn in the Firefox version, all MIT). The list is generated
+automatically from the module graph at build time.

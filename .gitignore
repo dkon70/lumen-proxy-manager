@@ -3,3 +3,4 @@ dist
 *.zip
 .e2e
 .e2e-browsers
+.store

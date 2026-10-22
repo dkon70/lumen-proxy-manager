@@ -22,7 +22,8 @@
     "e2e": "node e2e/run.mjs",
     "e2e:shots": "node e2e/run.mjs --shots",
     "e2e:firefox": "node e2e/firefox.mjs",
-    "zip:source": "node scripts/zip.mjs source"
+    "zip:source": "node scripts/zip.mjs source",
+    "store": "npm run build:chrome && node scripts/store.mjs"
   },
   "devDependencies": {
     "@puppeteer/browsers": "^3.2.5",

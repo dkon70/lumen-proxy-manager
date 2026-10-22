@@ -1,0 +1,43 @@
+Lumen Proxy sends sites through your proxy by your own rules. Keep your own searchable domain list, connect a PAC script, and make sure nothing silently falls back to a direct connection when the proxy is down.
+
+MODES
+• Off: the extension stays out of the way, Chrome and system settings apply.
+• By rules: sites from your list and those chosen by the PAC script go through the proxy, everything else goes direct.
+• All traffic: everything goes through the proxy except exceptions and local addresses.
+
+SITE LISTS
+• Two lists: "Via proxy" and "Direct". A domain covers all its subdomains: example.com also covers www.example.com.
+• When rules overlap, the more specific one wins. For example, google.com goes through the proxy and mail.google.com goes direct.
+• Instant search with highlighting, even across tens of thousands of domains.
+• Paste a site address into the search to see which rule covers it.
+• Select several domains to delete them or move them to the other list. A deletion can be undone.
+• Add domains in bulk: comma-separated, one per line or as links. Import and export as .txt.
+
+PAC SCRIPTS
+• Connect a PAC script by link (with auto-update) or paste it as text.
+• "Route to my proxy": sites the PAC sends to a proxy go through your server instead of the servers from the script.
+• Your lists always take priority over the PAC script.
+
+POPUP
+• Shows where the open site goes and which rule decided it.
+• Add a site to a list or remove it in one click, choosing the domain level.
+• Switch the mode and the active proxy right there.
+
+MORE
+• Several proxy servers: HTTP, HTTPS, SOCKS4, SOCKS5, with login and password. Paste a line like socks5://user:pass@host:port as a whole.
+• "Check an address" shows where any address goes with the current settings.
+• Settings backup to a file. Passwords are included only if you tick a separate box.
+• Light and dark theme follow the browser. Interface in English and Russian.
+
+SECURITY
+• Block DIRECT (on by default): if the proxy is unavailable, the site will not open instead of silently going direct. "PROXY ...; DIRECT" answers from a PAC script are cleaned of DIRECT. If the PAC script itself breaks, Chrome blocks requests instead of letting them through directly.
+• PAC isolation: an external script cannot bypass your lists or tamper with the extension's logic.
+• Checked before applying: a new PAC version first runs in a sandbox with no network access. If it has errors, the previous version stays. If Chrome still cannot run it, the extension rolls back.
+• PAC download over HTTPS only (HTTP only if you allow it), without cookies, up to 32 MB.
+• WebRTC leak protection with three levels: do not change, hide local addresses, or proxy only.
+• No DNS leaks: local addresses are detected from the address itself, without DNS queries.
+
+PRIVACY AND PERMISSIONS
+• Site access is requested only when needed: for one site when loading a PAC script, for all sites only if your proxy needs a login (otherwise Chrome cannot pass the password).
+• Passwords are stored only locally and are never synced. A password goes only to the proxy it was saved for.
+• No data collection. The extension sends nothing anywhere.

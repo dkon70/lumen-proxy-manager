@@ -1,0 +1,39 @@
+SINGLE PURPOSE
+Lumen Proxy routes the browser's traffic through proxy servers the user configures, according to the user's own rules: domain lists, an optional PAC script, a switch that blocks direct connections when the proxy is down, and WebRTC leak protection.
+
+PERMISSIONS
+
+proxy
+Core function. The extension generates a PAC script from the user's rules and applies it with chrome.proxy.settings, so that listed sites go through the user's proxy and the rest go direct.
+
+storage
+Stores the user's settings locally in chrome.storage.local: proxy servers, domain lists, mode, PAC settings and language. Nothing is synced or sent anywhere.
+
+unlimitedStorage
+Domain lists can hold tens of thousands of entries, and a PAC script the user connects by link is cached locally (up to 32 MB). Together they can exceed the default 10 MB storage.local quota.
+
+alarms
+Re-downloads the user's PAC script on the update interval the user picks, and clears a temporary error badge after a few minutes. Alarms survive service worker restarts, unlike timers.
+
+webRequest
+Used only for the webRequest.onAuthRequired event: when the user's proxy asks for a login, the extension answers with the credentials the user saved for that proxy. Credentials are given only to the proxy whose host and port match the challenge. The extension does not read, block or modify page requests.
+
+webRequestAuthProvider
+Required in Manifest V3 to answer webRequest.onAuthRequired asynchronously (asyncBlocking), which is how the extension supplies the saved proxy login and password.
+
+offscreen
+Before applying a PAC script the user connected, the extension test-runs it in a sandboxed page (null origin, no network access) to catch errors that would otherwise break all browsing. A service worker cannot host that sandbox iframe, so an offscreen document (reason IFRAME_SCRIPTING) holds it and is closed right after the check.
+
+activeTab
+When the user opens the popup, the extension reads the address of the current tab to show which route (proxy or direct) and which rule apply to that site, and to let the user add or remove the site from a list in one click. The address is not stored or sent anywhere.
+
+privacy
+Optional permission, requested only when the user changes the WebRTC setting on the Protection page. It sets privacy.network.webRTCIPHandlingPolicy so WebRTC cannot reveal the user's real IP address while the proxy is in use.
+
+REMOTE CODE
+Answer: Yes.
+The extension does not load or run remote JavaScript in its own pages; all extension code is in the package. The user may connect a PAC script (a standard proxy configuration file, written in JavaScript) by a URL they enter themselves. Its contents are passed to chrome.proxy.settings as pacScript.data, where Chrome's own proxy resolver evaluates it. Before that, the extension test-runs it in a sandboxed page declared in the manifest (null origin, CSP connect-src 'none', no extension APIs) to check that it works. The PAC script is downloaded over HTTPS only, without cookies, and cannot access the extension, pages or the network.
+
+DATA USAGE
+Collected data: none of the categories.
+Proxy logins and passwords, domain lists and settings stay in chrome.storage.local on the user's device. The extension has no server and sends no data to the developer or third parties. The only network requests it makes itself are downloads of the PAC script from the URL the user entered.
