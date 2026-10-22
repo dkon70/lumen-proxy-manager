@@ -22,6 +22,9 @@ describe('домены', () => {
 
   it('предлагает уровни домена', () => {
     expect(domainChoices('a.b.example.com')).toEqual(['a.b.example.com', 'b.example.com', 'example.com']);
+    expect(domainChoices('www.twitch.tv')).toEqual(['twitch.tv']);
+    expect(domainChoices('www.a.example.com')).toEqual(['a.example.com', 'example.com']);
+    expect(domainChoices('www.com')).toEqual(['www.com']);
   });
 });
 

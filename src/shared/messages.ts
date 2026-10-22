@@ -3,7 +3,8 @@ import type { Localized } from './i18n';
 
 export type Message =
   | { type: 'refreshPac' }
-  | { type: 'applyNow' };
+  | { type: 'applyNow' }
+  | { type: 'sync' };
 
 export type RefreshResult = { ok: true; size: number; changed: boolean } | { ok: false; error: Localized };
 

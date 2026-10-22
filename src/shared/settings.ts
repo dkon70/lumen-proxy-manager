@@ -116,6 +116,10 @@ export function normalizeSettings(raw: unknown): Settings {
   };
 }
 
+export function proxyAddress(host: string, port: number): string {
+  return `${host.includes(':') ? `[${host}]` : host}:${port}`;
+}
+
 export function activeProxy(s: Settings): ProxyServer | null {
   return s.proxies.find((p) => p.id === s.activeProxyId) ?? null;
 }

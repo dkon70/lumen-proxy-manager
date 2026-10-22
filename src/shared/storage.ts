@@ -1,6 +1,7 @@
 import { ext } from '../platform/api';
 import { DEFAULT_SETTINGS, normalizeSettings } from './settings';
 import { isLocalized } from './i18n';
+import { send } from './messages';
 import type { PacCache, Settings, Status } from './types';
 
 export const KEYS = {
@@ -8,7 +9,12 @@ export const KEYS = {
   pac: 'pacCache',
   pacPrevious: 'pacCachePrevious',
   status: 'status',
+  applied: 'appliedFingerprint',
 } as const;
+
+export function routeKey(tabId: number): string {
+  return `route:${tabId}`;
+}
 
 export const DEFAULT_STATUS: Status = {
   appliedAt: 0,
@@ -32,6 +38,7 @@ export function updateSettings(fn: (s: Settings) => void | Settings): Promise<Se
     const current = await loadSettings();
     const next = normalizeSettings(fn(current) ?? current);
     await ext.storage.local.set({ [KEYS.settings]: next });
+    if (__TARGET__ === 'firefox') send({ type: 'sync' }).catch(() => undefined);
     return next;
   });
   queue = run.catch(() => undefined);

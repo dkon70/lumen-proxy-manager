@@ -21,12 +21,13 @@ Chrome manifest changes.
 | Area | Chrome | Firefox |
 |---|---|---|
 | Background | service worker | event page (`background.scripts`, module) |
-| Applying routes | `proxy.settings` `pac_script` + `mandatory` | `proxy.settings` `autoConfig` with the same PAC as `data:` URL, `proxyDNS: true` |
+| Applying routes | `proxy.settings` `pac_script` + `mandatory` | `proxy.settings` `autoConfig` with the same PAC as `data:` URL, `proxyDNS: true`; over the 1 MiB pref limit (`MAX_PREF_URL`) a `blob:` URL held by the event page. Firefox keeps the loaded PAC when the blob dies with the page, but a dead blob after a browser restart means DIRECT until the background re-applies (`syncApplied()` on start) |
 | Permission | — | user must allow "Run in Private Windows", else `set` throws → `Status.accessProblem` → `FirefoxSetup` guide |
 | PAC validation | run in sandbox page via offscreen doc | `acorn` parse only (MV3 CSP forbids eval, no sandbox key) |
-| Exact route in UI | runs the PAC (`createPacEvaluator().route`) | `route()` returns `null`; UI uses `explainRoute()`, PAC-decided hosts show "decided by the PAC script" |
+| Exact route in UI | runs the PAC (`createPacEvaluator().route`) | `route()` returns `null`; UI uses `explainRoute()`; for PAC-decided hosts the popup shows the proxy that actually loaded the tab (`watchRoutes`: `webRequest.onHeadersReceived` `proxyInfo` → `storage.session` `route:<tabId>`, needs host permission, ignored if older than `Status.appliedAt`) |
 | Proxy auth | `onAuthRequired` + `asyncBlocking` + `webRequestAuthProvider` | `onAuthRequired` + `blocking` (Promise) + `webRequestBlocking` |
 | Proxy errors | `proxy.onProxyError` (`net::ERR_*`) | `proxy.onError` + `webRequest.onErrorOccurred` filtered to `NS_ERROR_PROXY_*` etc. (needs host permission) |
+| Waking the background | `storage.onChanged` wakes the SW | event page may sleep through `storage.onChanged`: `updateSettings()` sends `sync`, and every start runs `syncApplied()` (re-applies if the settings fingerprint changed) |
 | Control by others | `proxy.settings.onChange` | not available; checked on every apply |
 
 Map new Firefox error codes in `src/shared/errors.ts`. User-facing copy that names the browser takes `{browser}`

@@ -1,4 +1,4 @@
-import { background as platform } from '#platform';
+import { EXACT_ROUTE_CHECK, background as platform, TARGET } from '#platform';
 import { ext } from '../platform/api';
 import { describeProxyError } from '../shared/errors';
 import { localized, LocalizedError, resolveLang, toLocalized, translate } from '../shared/i18n';
@@ -6,7 +6,7 @@ import type { Message, RefreshResult } from '../shared/messages';
 import { buildPac } from '../shared/pac';
 import { checkPacUrl, looksLikePac, MAX_PAC_BYTES, MAX_PAC_MB, originPattern, PAC_IDLE_TIMEOUT_MS, remotePacText, sha256 } from '../shared/pacSource';
 import { activeProxy } from '../shared/settings';
-import { KEYS, loadPacCache, loadSettings, loadStatus, patchStatus } from '../shared/storage';
+import { KEYS, loadPacCache, loadSettings, loadStatus, patchStatus, routeKey } from '../shared/storage';
 import type { PacCache, Settings } from '../shared/types';
 
 const ALARM_REFRESH = 'pac-refresh';
@@ -14,10 +14,36 @@ const ALARM_CLEAR_ERROR = 'clear-error';
 
 let chain: Promise<unknown> = Promise.resolve();
 
-function scheduleApply(): Promise<void> {
-  const run = chain.then(applyNow).catch((e) => console.error('[lumen] apply failed', e));
+function enqueue(task: () => Promise<void>): Promise<void> {
+  const run = chain.then(task).catch(reportApplyError);
   chain = run;
   return run;
+}
+
+async function reportApplyError(e: unknown): Promise<void> {
+  console.error('[lumen] apply failed', e);
+  try {
+    const detail = e instanceof Error ? e.message : String(e);
+    await patchStatus({ lastError: { ...localized('applyError', { detail }), at: Date.now(), fatal: true } });
+    await updateIcon(await loadSettings(), true);
+  } catch (err) {
+    console.error('[lumen] could not report the apply error', err);
+  }
+}
+
+function scheduleApply(): Promise<void> {
+  return enqueue(applyNow);
+}
+
+function syncApplied(): Promise<void> {
+  return enqueue(async () => {
+    const [s, cache, applied] = await Promise.all([loadSettings(), loadPacCache(), ext.storage.session.get(KEYS.applied)]);
+    if (applied[KEYS.applied] !== (await fingerprint(s, cache))) await applyNow();
+  });
+}
+
+function fingerprint(s: Settings, cache: PacCache | null): Promise<string> {
+  return sha256(JSON.stringify([s, cache?.url ?? null, cache?.hash ?? null]));
 }
 
 async function applyNow(): Promise<void> {
@@ -29,12 +55,15 @@ async function applyNow(): Promise<void> {
 
   await applyWebRtc(s);
   await scheduleRefresh(s);
+  const previousError = (await loadStatus()).lastError;
   const status = await patchStatus({
     appliedAt: Date.now(),
+    lastError: previousError?.key === 'applyError' ? null : previousError,
     controlledByOther: await platform.controlledByOther(),
     accessProblem: await platform.accessProblem(),
   });
   await updateIcon(s, status.lastError !== null);
+  await ext.storage.session.set({ [KEYS.applied]: await fingerprint(s, cache) });
 }
 
 async function applyWebRtc(s: Settings): Promise<void> {
@@ -187,6 +216,16 @@ platform.onProxyError(({ code, fatal }) => {
   });
 });
 
+platform.watchRoutes((route) => {
+  ext.storage.session.set({ [routeKey(route.tabId)]: route });
+});
+
+if (!EXACT_ROUTE_CHECK) {
+  ext.tabs.onRemoved.addListener((tabId) => {
+    ext.storage.session.remove(routeKey(tabId));
+  });
+}
+
 platform.watchControl((controlledByOther) => {
   patchStatus({ controlledByOther });
 });
@@ -210,6 +249,10 @@ ext.runtime.onMessage.addListener((msg: Message & { target?: string }, sender, s
     refreshPac().then(sendResponse);
     return true;
   }
+  if (msg.type === 'sync') {
+    syncApplied().then(() => sendResponse(true));
+    return true;
+  }
   if (msg.type === 'applyNow') {
     patchStatus({ lastError: null })
       .then(scheduleApply)
@@ -230,3 +273,5 @@ ext.runtime.onStartup.addListener(async () => {
   const stale = !status.pacFetchedAt || Date.now() - status.pacFetchedAt > s.pac.refreshMinutes * 60_000;
   if (s.mode === 'rules' && s.pac.enabled && s.pac.kind === 'url' && s.pac.refreshMinutes > 0 && stale) await refreshPac();
 });
+
+if (TARGET === 'firefox') syncApplied();

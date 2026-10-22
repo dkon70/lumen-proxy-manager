@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { background, checkPacSyntax, createPacEvaluator, pacDataUrl } from '../src/platform/firefox';
+import { background, checkPacSyntax, createPacEvaluator, MAX_PREF_URL, observedRoute, pacDataUrl } from '../src/platform/firefox';
 import { buildPac } from '../src/shared/pac';
 import { normalizeSettings } from '../src/shared/settings';
 
@@ -18,7 +18,7 @@ function mockBrowser(incognito = true) {
       onError: add('proxyError'),
     },
     extension: { isAllowedIncognitoAccess: vi.fn(async () => incognito) },
-    webRequest: { onAuthRequired: add('auth'), onErrorOccurred: add('requestError') },
+    webRequest: { onAuthRequired: add('auth'), onErrorOccurred: add('requestError'), onHeadersReceived: add('headers') },
   };
   (globalThis as unknown as { browser: typeof browser }).browser = browser;
   return { browser, listeners };
@@ -63,9 +63,56 @@ describe('Firefox proxy application', () => {
     expect(await background.accessProblem()).toBeNull();
   });
 
+  it('hands a PAC over the pref size limit as a blob URL and frees the previous one', async () => {
+    const { browser } = mockBrowser();
+    const revoke = vi.spyOn(URL, 'revokeObjectURL');
+    const big = `${pac}\nvar pad = "${'x'.repeat(MAX_PREF_URL)}";`;
+    await background.applyProxy(settings, big);
+    const first = browser.proxy.settings.set.mock.calls[0][0].value.autoConfigUrl as string;
+    expect(first).toMatch(/^blob:/);
+    expect(await (await fetch(first)).text()).toBe(big);
+    await background.applyProxy(settings, pac);
+    expect(browser.proxy.settings.set.mock.calls[1][0].value.autoConfigUrl).toMatch(/^data:/);
+    expect(revoke).toHaveBeenCalledWith(first);
+  });
+
+  it('frees the new blob URL when Firefox rejects it', async () => {
+    const { browser } = mockBrowser();
+    browser.proxy.settings.set.mockRejectedValueOnce(new Error('An unexpected error occurred'));
+    const revoke = vi.spyOn(URL, 'revokeObjectURL');
+    await expect(background.applyProxy(settings, `${pac}\nvar pad = "${'x'.repeat(MAX_PREF_URL)}";`)).rejects.toThrow();
+    expect(revoke).toHaveBeenCalledWith(browser.proxy.settings.set.mock.calls[0][0].value.autoConfigUrl);
+  });
+
   it('data URL survives a large PAC', () => {
     const big = buildPac({ settings: normalizeSettings({ ...settings, proxyList: Array.from({ length: 50000 }, (_, i) => `d${i}.example.org`) }), remotePac: null });
     expect(atob(pacDataUrl(big).split(',')[1])).toBe(big);
+  });
+});
+
+describe('Firefox observed routes', () => {
+  it('records the proxy that loaded a tab', () => {
+    const { listeners } = mockBrowser();
+    const seen: unknown[] = [];
+    background.watchRoutes((r) => seen.push(r));
+    const fn = listeners.headers.fn as unknown as (d: object) => void;
+    fn({ tabId: 3, url: 'https://www.twitch.tv/x', proxyInfo: { type: 'socks', host: 'proxy.example.net', port: 1080 } });
+    fn({ tabId: 4, url: 'https://example.org/', proxyInfo: null });
+    fn({ tabId: -1, url: 'https://example.org/', proxyInfo: null });
+    expect(seen).toMatchObject([
+      { tabId: 3, host: 'www.twitch.tv', proxy: 'proxy.example.net:1080' },
+      { tabId: 4, host: 'example.org', proxy: null },
+    ]);
+  });
+
+  it('treats a direct proxyInfo as direct and brackets IPv6', () => {
+    expect(observedRoute({ tabId: 1, url: 'http://[::1]:8080/', proxyInfo: { type: 'direct', host: '', port: 0 } }, 5)).toEqual({
+      tabId: 1,
+      host: '::1',
+      proxy: null,
+      at: 5,
+    });
+    expect(observedRoute({ tabId: 1, url: 'https://a.org/', proxyInfo: { type: 'http', host: '2001:db8::1', port: 3128 } }, 5)?.proxy).toBe('[2001:db8::1]:3128');
   });
 });
 

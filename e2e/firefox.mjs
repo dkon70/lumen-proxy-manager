@@ -142,6 +142,8 @@ await session('granted', async ({ rdp, visit }) => {
   check('exception goes direct', exception.includes('UNKNOWN_HOST'), exception);
   const pacRoute = await visit('http://pac.lumen/');
   check('PAC proxy is replaced with own proxy', pacRoute === 'via-proxy:pac.lumen', pacRoute);
+  const seen = await bg.evaluate(`browser.storage.session.get().then((all) => Object.values(all).find((r) => r.host === 'pac.lumen'))`);
+  check('the route chosen by the PAC is recorded for the popup', seen?.proxy === `127.0.0.1:${PROXY_PORT}`, JSON.stringify(seen));
   const other = await visit('http://other.lumen/');
   check('unlisted domain goes direct', other.includes('UNKNOWN_HOST'), other);
   check('credentials sent after 407', proxyLog.some((l) => l.startsWith('407')) && proxyLog.some((l) => l.startsWith('OK')), proxyLog.slice(0, 3).join(' | '));
@@ -157,6 +159,17 @@ await session('granted', async ({ rdp, visit }) => {
   check('broken PAC is rejected by the syntax check', broken.ok === false && broken.error?.key === 'pacFetch.invalid', JSON.stringify(broken.error));
   const cached = await bg.evaluate(`browser.storage.local.get('pacCache').then((x) => x.pacCache.content)`);
   check('previous PAC version is kept', cached.includes('pac.lumen'));
+
+  pacText = `var pad = "${'x'.repeat(1_500_000)}";\nfunction FindProxyForURL(url, host) { return dnsDomainIs(host, "big.lumen") ? "PROXY 10.255.255.1:9" : "DIRECT"; }`;
+  const big = await options.evaluate(`browser.runtime.sendMessage({ type: 'refreshPac' })`);
+  check('PAC over the Firefox pref limit is downloaded', big.ok === true, JSON.stringify(big));
+  await sleep(1500);
+  const bigUrl = await bg.evaluate('browser.proxy.settings.get({}).then((x) => x.value.autoConfigUrl)');
+  check('PAC over the Firefox pref limit is handed over as a blob URL', bigUrl.startsWith('blob:moz-extension:'), bigUrl.slice(0, 40));
+  const bigRoute = await visit('http://big.lumen/');
+  check('PAC over the Firefox pref limit routes through own proxy', bigRoute === 'via-proxy:big.lumen', bigRoute);
+  const bigStatus = await bg.evaluate(`browser.storage.local.get('status').then((x) => x.status.lastError)`);
+  check('no apply error with a large PAC', bigStatus === '' || bigStatus === null, JSON.stringify(bigStatus));
 
   proxy.close();
   proxy.closeAllConnections();

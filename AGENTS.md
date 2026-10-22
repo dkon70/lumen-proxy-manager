@@ -34,7 +34,7 @@ src/background/index.ts     background (SW in Chrome, event page in Firefox): se
 src/platform/               browser-specific code, selected at build time through the `#platform` alias
   types.ts                  BackgroundPlatform / PacEvaluator contract; contract.ts type-checks both targets
   chrome.ts                 proxy.settings pac_script + mandatory, offscreen sandbox, asyncBlocking auth
-  firefox.ts                proxy.settings autoConfig (data: URL), acorn syntax check, blocking auth
+  firefox.ts                proxy.settings autoConfig (data: URL, blob: URL over the 1 MiB pref limit), acorn syntax check, blocking auth
   api.ts                    `ext` = `chrome` or `browser`, fixed at build time by __TARGET__
 src/shared/                 code shared by background and UI (no DOM, no Svelte)
   types.ts                  Settings, PacCache, Status
@@ -74,11 +74,14 @@ tests/                      vitest unit tests; e2e/run.mjs is the Chromium end-t
   `Status.accessProblem` is `firefox.privateAccess` and `FirefoxSetup.svelte` replaces the popup content and tops the
   options page with step-by-step instructions (extensions cannot request this permission or open about:addons).
   Granting it restarts the extension, which fires `onInstalled` (`update`), so settings apply without user action; no sandbox/offscreen, so the external PAC is only
-  syntax-checked (acorn) and the UI explains routes with `explainRoute()` instead of running the PAC;
+  syntax-checked (acorn) and the UI explains routes with `explainRoute()` instead of running the PAC
+  (for PAC-decided hosts the popup shows the proxy that loaded the tab, from `webRequest` `proxyInfo`);
   no `pacScript.mandatory`; `proxy.settings.onChange` does not exist.
 - **State lives in `chrome.storage.local`.** UI writes settings via `update()` / `updateSettings()`;
   the background listens to `storage.onChanged` and re-applies. Do not add message types for things storage
-  already propagates. Messages (`src/shared/messages.ts`) are only for actions: `refreshPac`, `applyNow`.
+  already propagates. Messages (`src/shared/messages.ts`) are only for actions: `refreshPac`, `applyNow`, and `sync`
+  (Firefox only: `updateSettings()` sends it because `storage.onChanged` may not wake a suspended event page; the background
+  re-applies when the settings fingerprint in `storage.session` differs, also on every event page start).
 - **Everything read from storage or an imported file goes through `normalizeSettings()`.** It is the only
   place that validates input; the PAC generator trusts its output. New fields must be validated there.
 - **Routing logic exists twice**: in the generated PAC (`pac.ts`) and in `route.ts` for the UI. Keep them in sync;

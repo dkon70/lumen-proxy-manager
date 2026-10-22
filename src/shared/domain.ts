@@ -69,7 +69,8 @@ export function hostSuffixes(host: string): string[] {
 
 export function domainChoices(host: string): string[] {
   const all = hostSuffixes(host);
-  return all.length > 1 ? all.slice(0, -1) : all;
+  const choices = all.length > 1 ? all.slice(0, -1) : all;
+  return choices.filter((d) => !(d.startsWith('www.') && choices.includes(d.slice(4))));
 }
 
 export function sortDomains(list: string[]): string[] {
