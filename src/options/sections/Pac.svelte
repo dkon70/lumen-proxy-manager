@@ -19,13 +19,6 @@
   let busy = $state(false);
   let message = $state<{ kind: 'ok' | 'error'; text: Localized } | null>(null);
 
-  let hasSiteAccess = $state(true);
-  if (TARGET === 'firefox') ext.permissions.contains({ origins: ['<all_urls>'] }).then((granted) => (hasSiteAccess = granted));
-
-  async function allowSiteAccess() {
-    hasSiteAccess = await ext.permissions.request({ origins: ['<all_urls>'] });
-  }
-
   const isHttp = $derived(url.trim().toLowerCase().startsWith('http:'));
 
   const INTERVALS: { value: number; label: MessageKey }[] = [
@@ -105,20 +98,6 @@
   </Switch>
 </div>
 
-{#if TARGET === 'firefox'}
-  <div class="panel padded access">
-    <div>
-      <strong>{t('pac.showRoute')}</strong>
-      <p class="hint">{t('pac.showRouteHint')}</p>
-    </div>
-    {#if hasSiteAccess}
-      <span class="granted">{t('pac.showRouteOn')}</span>
-    {:else}
-      <button class="btn" onclick={allowSiteAccess}>{t('pac.allowAccess')}</button>
-    {/if}
-  </div>
-{/if}
-
 <Segmented
   label={t('pac.source')}
   value={s.pac.kind}
@@ -177,23 +156,6 @@
 {/if}
 
 <style>
-  .access {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .access > div {
-    flex: 1;
-  }
-  .access .btn {
-    flex: none;
-  }
-  .granted {
-    flex: none;
-    color: var(--proxy);
-    font-size: 13px;
-    font-weight: 600;
-  }
   .block {
     display: grid;
     gap: 14px;

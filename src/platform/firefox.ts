@@ -1,8 +1,7 @@
 import { parse } from 'acorn';
 import { localized, type Localized } from '../shared/i18n';
-import { proxyAddress } from '../shared/settings';
 import type { Settings } from '../shared/types';
-import type { AuthRequest, AuthResponse, BackgroundPlatform, ObservedRoute, PacEvaluator, ProxyErrorEvent, Target } from './types';
+import type { AuthRequest, AuthResponse, BackgroundPlatform, PacEvaluator, ProxyErrorEvent, Target } from './types';
 
 export const TARGET: Target = 'firefox';
 export const BROWSER_NAME: string = 'Firefox';
@@ -35,16 +34,7 @@ interface FirefoxApi {
     onErrorOccurred: {
       addListener(listener: (details: { error: string }) => void, filter: { urls: string[] }): void;
     };
-    onHeadersReceived: {
-      addListener(listener: (details: ResponseDetails) => void, filter: { urls: string[]; types: string[] }): void;
-    };
   };
-}
-
-interface ResponseDetails {
-  tabId: number;
-  url: string;
-  proxyInfo?: { type: string; host: string; port: number } | null;
 }
 
 function api(): FirefoxApi {
@@ -78,18 +68,6 @@ export function checkPacSyntax(pac: string): Localized | null {
     const detail = e instanceof Error ? `SyntaxError: ${e.message}` : String(e);
     return localized('sandbox.exception', { detail });
   }
-}
-
-export function observedRoute(details: ResponseDetails, at: number): ObservedRoute | null {
-  if (details.tabId < 0) return null;
-  let host: string;
-  try {
-    host = new URL(details.url).hostname.replace(/^\[|\]$/g, '');
-  } catch {
-    return null;
-  }
-  const p = details.proxyInfo;
-  return { tabId: details.tabId, host, proxy: p && p.type !== 'direct' ? proxyAddress(p.host, p.port) : null, at };
 }
 
 const PROXY_ERROR = /^NS_ERROR_(PROXY_|UNKNOWN_PROXY_HOST|SOCKS_|UNKNOWN_SOCKS)/;
@@ -126,16 +104,6 @@ export const background: BackgroundPlatform = {
         if (PROXY_ERROR.test(details.error)) listener({ code: details.error, fatal: true });
       },
       { urls: ['<all_urls>'] },
-    );
-  },
-
-  watchRoutes(listener: (route: ObservedRoute) => void) {
-    api().webRequest.onHeadersReceived.addListener(
-      (details) => {
-        const route = observedRoute(details, Date.now());
-        if (route) listener(route);
-      },
-      { urls: ['<all_urls>'], types: ['main_frame'] },
     );
   },
 

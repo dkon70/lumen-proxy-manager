@@ -9,24 +9,18 @@
   import { remotePacText } from '../shared/pacSource';
   import { allMatches, explainRoute, isProxyResult, matchRule } from '../shared/route';
   import { BROWSER_NAME, createPacEvaluator, EXACT_ROUTE_CHECK } from '#platform';
-  import { activeProxy, proxyAddress, SCHEME_LABEL } from '../shared/settings';
-  import { routeKey } from '../shared/storage';
-  import type { ObservedRoute } from '../platform/types';
+  import { activeProxy, SCHEME_LABEL } from '../shared/settings';
   import type { Mode } from '../shared/types';
   import { t, tl } from '../ui/i18n.svelte';
   import { app, update } from '../ui/store.svelte';
 
   const evaluator = createPacEvaluator();
 
-  let tabId = $state<number | null>(null);
   let tabUrl = $state<URL | null>(null);
-  let observed = $state<ObservedRoute | null>(null);
-  let hasAccess = $state(true);
   let routeResult = $state<string | null>(null);
   let chosen = $state<string | null>(null);
 
   ext.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-    tabId = tab?.id ?? null;
     try {
       const u = tab?.url ? new URL(tab.url) : null;
       tabUrl = u && (u.protocol === 'http:' || u.protocol === 'https:') ? u : null;
@@ -63,22 +57,7 @@
     return () => (cancelled = true);
   });
 
-  $effect(() => {
-    const id = tabId;
-    if (EXACT_ROUTE_CHECK || id === null) return;
-    const key = routeKey(id);
-    ext.storage.session.get(key).then((data) => (observed = (data[key] as ObservedRoute | undefined) ?? null));
-    ext.permissions.contains({ origins: ['<all_urls>'] }).then((granted) => (hasAccess = granted));
-    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-      if (area === 'session' && key in changes) observed = (changes[key].newValue as ObservedRoute | undefined) ?? null;
-    };
-    ext.storage.onChanged.addListener(listener);
-    return () => ext.storage.onChanged.removeListener(listener);
-  });
-
   const explained = $derived(host ? explainRoute(s, host, remotePacText(s, app.pac) !== null) : null);
-  const pacUnknown = $derived(!EXACT_ROUTE_CHECK && explained?.kind === 'pac');
-  const pacSeen = $derived(pacUnknown && observed && observed.host === host && observed.at >= app.status.appliedAt ? observed : null);
 
   const active = $derived<'proxy' | 'direct' | 'unknown'>(
     s.mode === 'system'
@@ -89,11 +68,7 @@
           : 'direct'
         : !EXACT_ROUTE_CHECK && explained && explained.kind !== 'pac'
           ? explained.kind
-          : pacSeen
-            ? pacSeen.proxy
-              ? 'proxy'
-              : 'direct'
-            : 'unknown',
+          : 'unknown',
   );
 
   const reason = $derived.by(() => {
@@ -107,9 +82,7 @@
   });
 
   const viaLabel = $derived(
-    pacSeen?.proxy && (!proxy || pacSeen.proxy !== proxyAddress(proxy.host, proxy.port))
-      ? pacSeen.proxy
-      : routeResult && isProxyResult(routeResult) && !proxy
+    routeResult && isProxyResult(routeResult) && !proxy
       ? routeResult.split(';')[0].trim()
       : proxy
         ? proxy.name
@@ -137,10 +110,6 @@
     update((x) => {
       for (const m of toRemove) x[m.list] = x[m.list].filter((d) => d !== m.rule);
     });
-  }
-
-  function reloadTab() {
-    if (tabId !== null) ext.tabs.reload(tabId);
   }
 
   function openOptions(hash = '') {
@@ -196,12 +165,6 @@
           <h2 title={host}>{host}</h2>
           <RouteDiagram {active} proxyLabel={viaLabel} blocked={s.blockDirect && s.mode !== 'system'} />
           <p class="reason">{reason}</p>
-          {#if pacUnknown && !pacSeen && s.mode !== 'system'}
-            <div class="hint">
-              <span>{t(hasAccess ? 'popup.pacReload' : 'popup.pacAccess')}</span>
-              <button class="btn small" onclick={hasAccess ? reloadTab : () => openOptions('#pac')}>{t(hasAccess ? 'popup.reload' : 'popup.openSettings')}</button>
-            </div>
-          {/if}
 
           {#if s.mode !== 'system'}
             {#if matches.length}
@@ -311,16 +274,6 @@
   }
   .chips .muted {
     margin-right: 2px;
-    font-size: 12px;
-  }
-  .hint {
-    display: grid;
-    justify-items: start;
-    gap: 6px;
-    padding: 8px 10px;
-    border-radius: var(--r-md);
-    background: var(--surface);
-    color: var(--muted);
     font-size: 12px;
   }
   .chips button {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { background, checkPacSyntax, createPacEvaluator, MAX_PREF_URL, observedRoute, pacDataUrl } from '../src/platform/firefox';
+import { background, checkPacSyntax, createPacEvaluator, MAX_PREF_URL, pacDataUrl } from '../src/platform/firefox';
 import { buildPac } from '../src/shared/pac';
 import { normalizeSettings } from '../src/shared/settings';
 
@@ -18,7 +18,7 @@ function mockBrowser(incognito = true) {
       onError: add('proxyError'),
     },
     extension: { isAllowedIncognitoAccess: vi.fn(async () => incognito) },
-    webRequest: { onAuthRequired: add('auth'), onErrorOccurred: add('requestError'), onHeadersReceived: add('headers') },
+    webRequest: { onAuthRequired: add('auth'), onErrorOccurred: add('requestError') },
   };
   (globalThis as unknown as { browser: typeof browser }).browser = browser;
   return { browser, listeners };
@@ -87,32 +87,6 @@ describe('Firefox proxy application', () => {
   it('data URL survives a large PAC', () => {
     const big = buildPac({ settings: normalizeSettings({ ...settings, proxyList: Array.from({ length: 50000 }, (_, i) => `d${i}.example.org`) }), remotePac: null });
     expect(atob(pacDataUrl(big).split(',')[1])).toBe(big);
-  });
-});
-
-describe('Firefox observed routes', () => {
-  it('records the proxy that loaded a tab', () => {
-    const { listeners } = mockBrowser();
-    const seen: unknown[] = [];
-    background.watchRoutes((r) => seen.push(r));
-    const fn = listeners.headers.fn as unknown as (d: object) => void;
-    fn({ tabId: 3, url: 'https://www.twitch.tv/x', proxyInfo: { type: 'socks', host: 'proxy.example.net', port: 1080 } });
-    fn({ tabId: 4, url: 'https://example.org/', proxyInfo: null });
-    fn({ tabId: -1, url: 'https://example.org/', proxyInfo: null });
-    expect(seen).toMatchObject([
-      { tabId: 3, host: 'www.twitch.tv', proxy: 'proxy.example.net:1080' },
-      { tabId: 4, host: 'example.org', proxy: null },
-    ]);
-  });
-
-  it('treats a direct proxyInfo as direct and brackets IPv6', () => {
-    expect(observedRoute({ tabId: 1, url: 'http://[::1]:8080/', proxyInfo: { type: 'direct', host: '', port: 0 } }, 5)).toEqual({
-      tabId: 1,
-      host: '::1',
-      proxy: null,
-      at: 5,
-    });
-    expect(observedRoute({ tabId: 1, url: 'https://a.org/', proxyInfo: { type: 'http', host: '2001:db8::1', port: 3128 } }, 5)?.proxy).toBe('[2001:db8::1]:3128');
   });
 });
 

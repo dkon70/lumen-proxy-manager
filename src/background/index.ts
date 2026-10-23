@@ -1,4 +1,4 @@
-import { EXACT_ROUTE_CHECK, background as platform, TARGET } from '#platform';
+import { background as platform, TARGET } from '#platform';
 import { ext } from '../platform/api';
 import { describeProxyError } from '../shared/errors';
 import { localized, LocalizedError, resolveLang, toLocalized, translate } from '../shared/i18n';
@@ -6,7 +6,7 @@ import type { Message, RefreshResult } from '../shared/messages';
 import { buildPac } from '../shared/pac';
 import { checkPacUrl, looksLikePac, MAX_PAC_BYTES, MAX_PAC_MB, originPattern, PAC_IDLE_TIMEOUT_MS, remotePacText, sha256 } from '../shared/pacSource';
 import { activeProxy } from '../shared/settings';
-import { KEYS, loadPacCache, loadSettings, loadStatus, patchStatus, routeKey } from '../shared/storage';
+import { KEYS, loadPacCache, loadSettings, loadStatus, patchStatus } from '../shared/storage';
 import type { PacCache, Settings } from '../shared/types';
 
 const ALARM_REFRESH = 'pac-refresh';
@@ -215,16 +215,6 @@ platform.onProxyError(({ code, fatal }) => {
     await ext.alarms.create(ALARM_CLEAR_ERROR, { delayInMinutes: 3 });
   });
 });
-
-platform.watchRoutes((route) => {
-  ext.storage.session.set({ [routeKey(route.tabId)]: route });
-});
-
-if (!EXACT_ROUTE_CHECK) {
-  ext.tabs.onRemoved.addListener((tabId) => {
-    ext.storage.session.remove(routeKey(tabId));
-  });
-}
 
 platform.watchControl((controlledByOther) => {
   patchStatus({ controlledByOther });

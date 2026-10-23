@@ -142,8 +142,6 @@ await session('granted', async ({ rdp, visit }) => {
   check('exception goes direct', exception.includes('UNKNOWN_HOST'), exception);
   const pacRoute = await visit('http://pac.lumen/');
   check('PAC proxy is replaced with own proxy', pacRoute === 'via-proxy:pac.lumen', pacRoute);
-  const seen = await bg.evaluate(`browser.storage.session.get().then((all) => Object.values(all).find((r) => r.host === 'pac.lumen'))`);
-  check('the route chosen by the PAC is recorded for the popup', seen?.proxy === `127.0.0.1:${PROXY_PORT}`, JSON.stringify(seen));
   const other = await visit('http://other.lumen/');
   check('unlisted domain goes direct', other.includes('UNKNOWN_HOST'), other);
   check('credentials sent after 407', proxyLog.some((l) => l.startsWith('407')) && proxyLog.some((l) => l.startsWith('OK')), proxyLog.slice(0, 3).join(' | '));

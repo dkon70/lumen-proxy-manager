@@ -42,8 +42,6 @@ export const background: BackgroundPlatform = {
     chrome.proxy.settings.onChange.addListener((d) => onChange(d.levelOfControl === 'controlled_by_other_extensions'));
   },
 
-  watchRoutes() {},
-
   onProxyError(listener: (event: ProxyErrorEvent) => void) {
     chrome.proxy.onProxyError.addListener((d) => listener({ code: d.error, fatal: d.fatal }));
   },

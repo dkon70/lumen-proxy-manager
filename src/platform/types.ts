@@ -19,13 +19,6 @@ export interface AuthResponse {
   authCredentials?: { username: string; password: string };
 }
 
-export interface ObservedRoute {
-  tabId: number;
-  host: string;
-  proxy: string | null;
-  at: number;
-}
-
 export interface PacRouteResult {
   url: string;
   host: string;
@@ -42,7 +35,6 @@ export interface BackgroundPlatform {
   controlledByOther(): Promise<boolean>;
   watchControl(onChange: (controlledByOther: boolean) => void): void;
   onProxyError(listener: (event: ProxyErrorEvent) => void): void;
-  watchRoutes(listener: (route: ObservedRoute) => void): void;
   registerAuth(handler: (request: AuthRequest) => Promise<AuthResponse>): void;
   validatePac(pac: string): Promise<Localized | null>;
   accessProblem(): Promise<Localized | null>;

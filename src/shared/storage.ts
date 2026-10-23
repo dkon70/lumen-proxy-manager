@@ -12,10 +12,6 @@ export const KEYS = {
   applied: 'appliedFingerprint',
 } as const;
 
-export function routeKey(tabId: number): string {
-  return `route:${tabId}`;
-}
-
 export const DEFAULT_STATUS: Status = {
   appliedAt: 0,
   lastError: null,

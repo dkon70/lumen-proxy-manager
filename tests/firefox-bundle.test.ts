@@ -41,8 +41,7 @@ function firefoxMock() {
         onError: event(),
       },
       extension: { isAllowedIncognitoAccess: async () => true },
-      webRequest: { onAuthRequired: event(), onErrorOccurred: event(), onHeadersReceived: event() },
-      tabs: { onRemoved: event() },
+      webRequest: { onAuthRequired: event(), onErrorOccurred: event() },
       permissions: { contains: async () => false },
       alarms: { get: async () => undefined, clear: async () => true, create: async () => undefined, onAlarm: event() },
       runtime: { id: 'lumen', onMessage: event(), onInstalled: event(), onStartup: event(), openOptionsPage: vi.fn() },
@@ -65,8 +64,6 @@ describe.skipIf(!existsSync(BUNDLE))('built Firefox background (dist/firefox)', 
 
     await import(pathToFileURL(BUNDLE).href);
     expect(browser.webRequest.onAuthRequired.listeners).toHaveLength(1);
-    expect(browser.webRequest.onHeadersReceived.listeners).toHaveLength(1);
-    expect(browser.tabs.onRemoved.listeners).toHaveLength(1);
     expect(browser.proxy.onError.listeners).toHaveLength(1);
 
     for (const fn of browser.runtime.onInstalled.listeners) await (fn as (d: object) => Promise<void>)({ reason: 'install' });

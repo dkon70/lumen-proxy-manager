@@ -75,7 +75,7 @@ tests/                      vitest unit tests; e2e/run.mjs is the Chromium end-t
   options page with step-by-step instructions (extensions cannot request this permission or open about:addons).
   Granting it restarts the extension, which fires `onInstalled` (`update`), so settings apply without user action; no sandbox/offscreen, so the external PAC is only
   syntax-checked (acorn) and the UI explains routes with `explainRoute()` instead of running the PAC
-  (for PAC-decided hosts the popup shows the proxy that loaded the tab, from `webRequest` `proxyInfo`);
+  (PAC-decided hosts show "decided by the PAC script", without a guess about the actual route);
   no `pacScript.mandatory`; `proxy.settings.onChange` does not exist.
 - **State lives in `chrome.storage.local`.** UI writes settings via `update()` / `updateSettings()`;
   the background listens to `storage.onChanged` and re-applies. Do not add message types for things storage
